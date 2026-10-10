@@ -23,6 +23,9 @@
 #include "f99-struct-configdbase.h"
 #include "f04-configdbase.h"
 #include "f02-dbase-access.h"
+#include "f02-bootlogic.h"
+#include "f99-struct-tripcntrs.h"
+
 
 void init_difcommand_list_core_comqueries(void);
 

@@ -12,7 +12,7 @@
 #include "f03-fetchalarm-task.h"
 
 //
-#define DEBUG 1
+#define DEBUGFETCH 1
 //
 /////////////////////////////////////////////////////////
 //tasks
@@ -31,6 +31,9 @@ int flush_fetchalarms_mutex(void);
 int fetchalarms_available_check_mutex(uint8_t *avail);
 int store_fetchalarms_mutex(ALARMENTRY_T *fetchalarms);
 int extract_fetchalarms_mutex(ALARMENTRY_T *fetchalarms);
+//
+BaseType_t post_FetchAlarmsQueue(uint8_t allow, ALARMENTRY_T *entry);
+char *get_alarmeventstr(ALARMENTRY_T *entry, char *msg, int msg_len);
 //
 BaseType_t create_fetchalarmtask(void);
 void StartTaskFetchAlarm(void *arg);
@@ -161,6 +164,74 @@ int extract_fetchalarms_mutex(ALARMENTRY_T *fetchalarms)
 }
 
 
+BaseType_t post_FetchAlarmsQueue(uint8_t allow, ALARMENTRY_T *entry)
+{
+    BaseType_t status = pdTRUE;
+    if(allow)
+    {
+        status = xQueueSend(QueueFetchAlarmHandle, entry, portMAX_DELAY  );
+        if(status != pdTRUE)
+        {
+            debug_msg("FAIL: 'post_FetchAlarmsQueue' !\r\n");
+        }
+    }
+    return status;
+}
+
+
+char *get_alarmeventstr(ALARMENTRY_T *entry, char *msg, int msg_len)
+{
+    uint8_t errflg = 0;
+    char str1[100];
+    char str2[50];
+    int j;
+    int first = 0;
+    //
+    memset(msg,0,msg_len);
+    //
+#if DEBUGFETCH
+    debug_msg("inputno %d tripcnt %d\r\n",
+              entry->curinputno, entry->tripcnt);
+#endif
+    /////////////////////////////////////////////////////////////////////////////////
+    //determine mapped outputs
+    memset(str1,0,sizeof(str1));
+    memset(str2,0,sizeof(str2));
+    sprintf(str1,"Mapped Outputs: [");
+    for(j=0;j<MAX_OUTCHANS;j++)
+    {
+        if(entry->isoutputmapped[j])
+        {
+            if(first == 0)
+            {
+                sprintf(str2,"%d", j + 1);
+                first = 1;
+            }
+            else
+            {
+                sprintf(str2," ,%d", j + 1);
+            }
+            strcat(str1,str2);
+        }
+    }
+    memset(str2,0,sizeof(str2));
+    if(first == 0)
+    {
+        sprintf(str2,"None]\r\n");
+    }
+    else
+    {
+        sprintf(str2,"]\r\n");
+    }
+    strcat(str1,str2);
+    /////////////////////////////////////////////////////////////////////////////////
+    snprintf(msg,msg_len,"TRIP Input:%d, Count:%d, %s", entry->curinputno, entry->tripcnt, str1);
+    ///////////////////
+    return msg;
+    ///////////////////
+}
+
+
 /////////////////////////////////////////////////////////
 BaseType_t create_fetchalarmtask(void)
 {
@@ -194,8 +265,7 @@ void StartTaskFetchAlarm(void *argument)
     //////////////////////////////////////////////////////////////////////
     vTaskDelay(40000); //40 secs
     debug_msg("\r\n TaskFetchAlarm Waiting for BOOTUP !\r\n");
-    //if(wait_TaskFetchAlarm_for_bootup() != 0)
-    if(0)
+    if(wait_TaskFetchAlarm_for_postboot() != 0)
     {
         stop_watchdog();
         while(1)

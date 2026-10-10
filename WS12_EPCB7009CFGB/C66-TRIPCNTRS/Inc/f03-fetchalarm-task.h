@@ -1,5 +1,5 @@
 /****************************************************
-  FILE NAME     : f03-fetchalarm-task.c
+  FILE NAME     : f03-fetchalarm-task.h
   ORIGINATOR    : A Joshi
   LAST EDITED   : 28 SEPT 2026
   PROJECT       : WS12_EPCB7009CFGB
@@ -48,6 +48,7 @@
 #include "f01-tripcntrs.h"
 #include "f99-struct-fetchalarms.h"
 #include "f01-gpio.h"
+#include "f02-uart7.h"
 //
 int create_mutex_access_fetchalarms(void);
 int flush_fetchalarms_mutex(void);
@@ -55,6 +56,10 @@ int fetchalarms_available_check_mutex(uint8_t *avail);
 int store_fetchalarms_mutex(ALARMENTRY_T *fetchalarms);
 int extract_fetchalarms_mutex(ALARMENTRY_T *fetchalarms);
 //
+BaseType_t post_FetchAlarmsQueue(uint8_t allow, ALARMENTRY_T *entry);
+char *get_alarmeventstr(ALARMENTRY_T *entry, char *msg, int msg_len);
+//
+
 BaseType_t create_fetchalarmtask(void);
 void StartTaskFetchAlarm(void *arg);
 int create_fetchalarm_queue(void);

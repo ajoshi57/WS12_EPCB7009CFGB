@@ -30,27 +30,29 @@
 #define HELP_HELP_LAST   0
 #define TOTAL_HELP_CMDS  1
 //All Core Settings
-//Core com = 6
-//total = 
-#define TOTAL_COREALLSET_CMDS  6
+//Core com = 7
+#define TOTAL_COREALLSET_CMDS  7
 #define HELP_COREALLSET_FIRST  1
-#define HELP_COREALLSET_LAST   6
+#define HELP_COREALLSET_LAST   7
 //
 //All Core Queries
-//Core com = 3
-//total = 
-#define TOTAL_COREALLQ_CMDS  3
+//Core com = 4
+#define TOTAL_COREALLQ_CMDS  4
 #define HELP_COREALLQ_FIRST  HELP_COREALLSET_LAST + 1
 #define HELP_COREALLQ_LAST   HELP_COREALLQ_FIRST + TOTAL_COREALLQ_CMDS - 1
 //
 //
 //All FACTORY SETTINGS
-//Com Factory = 3
-//total = 3
-#define TOTAL_ALLFACTSET_CMDS 3
+//Com Factory Set = 4
+#define TOTAL_ALLFACTSET_CMDS 4
 #define HELP_ALLFACTSET_FIRST  HELP_COREALLQ_LAST + 1
 #define HELP_ALLFACTSET_LAST   HELP_ALLFACTSET_FIRST + TOTAL_ALLFACTSET_CMDS -1
 //
+//All FACTORY QUERIES
+//Com Factory Queries = 1
+#define TOTAL_ALLFACTQ_CMDS 1
+#define HELP_ALLFACTQ_FIRST  HELP_ALLFACTSET_LAST + 1
+#define HELP_ALLFACTQ_LAST   HELP_ALLFACTQ_FIRST + TOTAL_ALLFACTQ_CMDS -1
 
 
 
@@ -58,6 +60,7 @@
 void init_difcommand_list_core_comsettings(void);
 void init_difcommand_list_core_comqueries(void);
 void init_difcommand_list_comfactory_settings(void);
+void init_difcommand_list_comfactory_queries(void);
 
 
 

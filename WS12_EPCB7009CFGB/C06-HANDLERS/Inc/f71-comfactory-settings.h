@@ -25,6 +25,8 @@
 #include "f99-struct-configdbase.h"
 #include "f04-configdbase.h"
 #include "f02-dbase-access.h"
+#include "f02-uart7.h"
+#include "f04-logicdefcfg.h"
 
 
 void init_difcommand_list_comfactory_settings(void);

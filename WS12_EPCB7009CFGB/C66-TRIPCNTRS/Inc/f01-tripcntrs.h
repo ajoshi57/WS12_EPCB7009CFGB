@@ -24,11 +24,13 @@
 #include "f01-console.h"
 #include "f01-defines.h"
 #include "f99-struct-configdbase.h"
+#include "f02-uart7.h"
+#include "f99-struct-fetchalarms.h"
 
 //fns protos defined here...
 int create_mutex_access_tripcntrs(void);
 int init_tripcntrs_mutex(void);
-int incr_tripcntrs_mutex(uint8_t inputno);
+int incr_tripcntrs_mutex(uint8_t inputno, ALARMENTRY_T *alarmentry);
 int copy_tripcntrs_mutex(TRIPCNTRS_T *tripcntrs);
 //
 

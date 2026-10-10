@@ -45,6 +45,7 @@
 #include "f01-console.h"
 #include "f01-defines.h"
 #include "f01-tripcntrs.h"
+#include "f03-fetchalarm-task.h"
 //
 BaseType_t create_cntrtask(void);
 void StartTaskCntr(void *arg);

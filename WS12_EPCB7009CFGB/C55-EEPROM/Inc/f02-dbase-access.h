@@ -26,6 +26,17 @@
 /////////////////////////////////////////////////////////////////////
 //FNs protos defined here...
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//TEST Access
+int EEPROM_TEST_clear(void);
+int EEPROM_TEST_default(void);
+int EEPROM_WriteTEST(void);
+int EEPROM_ReadTEST(void);
+void init_test_ref(void);
+int check_test_defaults(int *failstep);
+
+//=====================================================================
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //Config Access
 int EEPROM_OAMConfig_clear(void);
 int EEPROM_OAMConfig_default(void);

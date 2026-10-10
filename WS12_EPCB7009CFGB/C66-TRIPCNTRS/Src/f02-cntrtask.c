@@ -55,6 +55,14 @@ void StartTaskCntr(void *arg)
             ;   //stuck here
     }
     //================================================================================
+    ALARMENTRY_T *alarmentry = (ALARMENTRY_T *) pvPortMalloc(sizeof(ALARMENTRY_T));
+    if(alarmentry == NULL)
+    {
+        debug_msg("\r\nFAIL Alloc Mem - 'ALARMENTRY_T'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    //================================================================================
     init_tripcntrs_mutex();
     //
     //================================================================================
@@ -74,7 +82,12 @@ void StartTaskCntr(void *arg)
              debug_msg("RX TRIP Post [%d] Input [%d]\r\n", postcnt, inputno);
  #endif
              ////////////////////////////////////////////////////////////////////////////////////////
-             incr_tripcntrs_mutex( inputno);
+             memset(alarmentry,0,sizeof(ALARMENTRY_T));
+             flg = incr_tripcntrs_mutex( inputno, alarmentry);
+             if(flg == 0)
+             {
+                 post_FetchAlarmsQueue(1, alarmentry);
+             }
              ////////////////////////////////////////////////////////////////////////////////////////
              copy_tripcntrs_mutex(tripcntrs);
 #if DEBUG

@@ -20,6 +20,7 @@ int handle_setglitchfilter(int argc, char **argv, uint8_t cmdkwlen, char *respon
 int handle_setoutputpulse(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 int handle_setoutputsource(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 int handle_resetcard(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
+int handle_cleartripcounters(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 //
 void init_difcommand_list_core_comsettings(void);
 
@@ -81,10 +82,20 @@ CMDMSG_T resetcard =
 {
         "#resetcard#", //cmdstr
         1, //"exe"
-        "REset Carde and Re-Boot (ALL Settings)\r\n", //help_str
+        "RESET and Re-Boot (ALL Settings)\r\n", //help_str
         (CLIGROUP_CORECOMSET + 6), //command_id
         AUTH_SUPERUSER,         //auth_level
         &handle_resetcard     //handler fn
+};
+
+CMDMSG_T cleartripcounters =
+{
+        "#cleartripcounters#", //cmdstr
+        1, //"exe"
+        "CLEAR/RESET Trip Counters and FETCH Alarm Queue\r\n", //help_str
+        (CLIGROUP_CORECOMSET + 7), //command_id
+        AUTH_SUPERUSER,         //auth_level
+        &handle_cleartripcounters     //handler fn
 };
 
 
@@ -1806,17 +1817,176 @@ int handle_resetcard(int argc, char **argv, uint8_t cmdkwlen, char *response_buf
     //
 }
 
+int handle_cleartripcounters(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
+{
+    //possibilities
+    //cleartripcounters
+    //cleartripcounters help
+    //cleartripcounters ?
+    //cleartripcounters exe
+    int c1 = 0;
+    int c1x = 0;
+    int c2 = 0;
+    int selhelp = 0;
+    //
+    int ret = RET_FAIL;
+    uint16_t superlen,msglen ;
+    char buf[100];
+    int j;
+    //
+    int flg;
+    //================================================================================
+    //
+    //////////////////////////////////////////////////////////////////////////
+    uint8_t *oammsg = (uint8_t *) pvPortMalloc(sizeof(uint8_t) * MAX_RESPSTRING_SIZE);
+    if (oammsg == NULL)
+    {
+        debug_msg("\r\nFAIL Alloc Mem - 'oammsg'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    ///////////////////////////////////////////////////////////////////////////
+    VALIDRESP_T *oamresppkt = (VALIDRESP_T *) pvPortMalloc(sizeof(VALIDRESP_T));
+    if(oamresppkt == NULL)
+    {
+        debug_msg("\r\nFAIL Alloc Mem - 'VALIDRESP_T'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////
+    //arg check and help
+    if (argc != 1 && argc != 2)
+    {
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg, "Incorrect Argument Count !\r\n");
+        strcat((char *)oammsg, "SYNTAX ERROR\r\n@FAIL@\r\n");
+        construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+        debug_msg((char *)oamresppkt->resppkt);
+#endif
+        memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+        goto endx;
+    }
+    //check...this could be 'help'
+    selhelp = 0;
+    if (argc == 1)
+    {
+        selhelp = 1;
+    }
+    else
+    {
+        if ((argc == 2) && (argv[1] == NULL))
+        {
+            memset(oammsg,0,MAX_RESPSTRING_SIZE);
+            sprintf((char *)oammsg, "Execution Error !\r\n@FAIL@\r\n");
+            construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+           debug_msg((char *)oamresppkt->resppkt);
+#endif
+           memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+           goto endx;
+        }
+        else
+        {
+            c1 = strncmp(argv[1], "help",strlen("help"));
+            c1x = strncmp(argv[1], "?",1);
+            if (c1 == 0 || c1x == 0)
+            {
+                selhelp = 1;
+            }
+            else
+            {
+                c2 = strncmp(argv[1], "exe",strlen("exe"));
+                if(c2 != 0)
+                {
+                    memset(oammsg,0,MAX_RESPSTRING_SIZE);
+                    sprintf((char *)oammsg, "Execution Error !\r\n@FAIL@\r\n");
+                    construct_oam_responsepkt(oammsg, oamresppkt);
+        #if DEBUG
+                   debug_msg((char *)oamresppkt->resppkt);
+        #endif
+                   memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+                   goto endx;
+                }
+            }
+        }
+    }
+    if(selhelp != 0)
+    {
+        construct_oam_large_template_responsepkt((uint8_t *)response_buf, RESPONSE_BUF_SIZE);
+         strcat(response_buf, cleartripcounters.help_str);
+         strcat(response_buf, "\r\n");
+        //
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "Cmd String <%s> has 1 Arg :\r\n", cleartripcounters.command_name);
+        strcat(response_buf, buf);
+        //
+        //ARG-1, <Group>
+        strcat(response_buf, "Arg-1 a fixed string for execution 'exe'\r\n");
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "E.G. %s exe\r\n", cleartripcounters.command_name);
+        strcat(response_buf, buf);
+         //
+         strcat(response_buf, "All TRIP Counts are cleared and Fetch Alarm Queue is cleared\r\n");
+         //
+        strcat((char *)response_buf, "@OK@\r\n##");
+         superlen = strlen(response_buf);
+         msglen = superlen - 10;
+         //
+         /////////////////////
+         memset(buf,0,sizeof(buf));
+         sprintf(buf,"$$[%04d]",msglen);
+         for(j=0;j<8;j++)
+         {
+            response_buf[j] = buf[j];
+         }
+ #if DEBUG
+        debug_msg((char *)response_buf);
+ #endif
+         /////////////////////
+         ret = RET_SUCCESS;
+         goto endx;
+    }
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    //////////////////////////////////////////////////////////////////////
+    //Normal Execution
+    init_tripcntrs_mutex();
+    /////////////////////////////
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //////////////////////////////////////////////////////////////////////
+    //VALID RESPONSE
+    ret = RET_SUCCESS;
+    memset(oammsg,0,MAX_RESPSTRING_SIZE);
+    sprintf((char *)oammsg,"SUCCESS\r\n@OK@\r\n");
+    construct_oam_responsepkt(oammsg, oamresppkt);
+    memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+    //
+    //////////////////////////////////////////////////////////////////////
+    ///////////////////////////////
+    endx:
+    vPortFree(oammsg);
+    vPortFree(oamresppkt);
+    return ret;
+    ///////////////////////////////
+    //
+}
+
+
 
 void init_difcommand_list_core_comsettings(void)
 {
 	//cli group CLIGROUP_CORECOMSET
-	//1- 6(6nos)
+	//1- 7(7nos)
 	add_command_to_list(&setcomdefaults);
 	add_command_to_list(&setcomtitle);
 	add_command_to_list(&setglitchfilter);
 	add_command_to_list(&setoutputpulse);
 	add_command_to_list(&setoutputsource);
 	add_command_to_list(&resetcard);
+	add_command_to_list(&cleartripcounters);
 }
 
 

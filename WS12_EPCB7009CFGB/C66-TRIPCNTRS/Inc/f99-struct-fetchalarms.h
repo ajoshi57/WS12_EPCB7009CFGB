@@ -14,10 +14,9 @@
 
 typedef struct __attribute__((__packed__)) _alarmentry_
 {
-    uint8_t curinputno;  //0 if not input, otherwise 1-4
-    uint8_t curoutputno; //0 if not input, otherwise 1-16
-    uint32_t inputcnt[MAX_INCHANS];
-    uint32_t outputcnt[MAX_OUTCHANS];
+    uint8_t curinputno;  //pulse sense on input no 1-4
+    uint8_t isoutputmapped[MAX_OUTCHANS]; //0 if not mapped, otherwise 1
+    uint32_t tripcnt;    //pulses count
     //
 } ALARMENTRY_T;
 

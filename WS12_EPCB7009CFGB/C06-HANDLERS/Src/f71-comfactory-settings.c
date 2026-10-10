@@ -1,7 +1,7 @@
 /****************************************************
   FILE NAME		: f71-comfactory-settings.c
    ORIGINATOR	: A Joshi
-  LAST EDITED   : 10 MAY 2026
+  LAST EDITED   : 10 OCT 2026
   PROJECT       : WS12_EPCB7011CFGB
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
@@ -19,6 +19,7 @@ extern OAMCFGDBASE_T OAM_CONFIG_DBASE;
 int handle_setcomserial(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 int handle_setcomdesc(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 int handle_wipemem(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
+int handle_logici2cwrrd(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 //
 
 void init_difcommand_list_comfactory_settings(void);
@@ -54,6 +55,15 @@ CMDMSG_T wipemem =
         &handle_wipemem       //handler fn
 };
 
+CMDMSG_T logici2cwrrd =
+{
+        "#fflogici2cwrrd#", //cmdstr
+        2,
+        "FACTORY TEST LOGIC I2C Registers Write/Read TEST repeated <Count> times\r\n", //help_str
+        (CLIGROUP_COMFACTORYSET + 4), //command_id
+        AUTH_SUPERUSER,        //auth_level
+        &handle_logici2cwrrd       //handler fn
+};
 
 
 int handle_setcomserial(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
@@ -736,14 +746,256 @@ int handle_wipemem(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
     ///////////////////////////////
 }
 
+int handle_logici2cwrrd(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
+{
+    //possibilities
+    //logici2cwrrd
+    //logici2cwrrd help
+    //logici2cwrrd ?
+    //logici2cwrrd <Count> 1-99
+    int c1 = 0;
+    int c1x = 0;
+    int c2 = 0;
+    int selhelp = 0;
+    uint16_t u16count;
+    uint8_t lenstr1; //len of string argument 1
+    //
+    //
+    int ret = RET_FAIL;
+    uint16_t superlen,msglen ;
+    char buf[100];
+    int j;
+    int failstage, testfailstep;
+    //
+    uint8_t u8count;
+    //
+    int flg;
+    //================================================================================
+    //
+    //////////////////////////////////////////////////////////////////////////
+    uint8_t *oammsg = (uint8_t *) pvPortMalloc(sizeof(uint8_t) * MAX_RESPSTRING_SIZE);
+    if (oammsg == NULL)
+    {
+        debug_msg("\r\nFAIL Alloc Mem - 'oammsg'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    ///////////////////////////////////////////////////////////////////////////
+    VALIDRESP_T *oamresppkt = (VALIDRESP_T *) pvPortMalloc(sizeof(VALIDRESP_T));
+    if(oamresppkt == NULL)
+    {
+        debug_msg("\r\nFAIL Alloc Mem - 'VALIDRESP_T'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////
+    //arg check and help
+    if (argc != 1 && argc != 2)
+    {
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg, "Incorrect Argument Count !\r\n");
+        strcat((char *)oammsg, "SYNTAX ERROR\r\n@FAIL@\r\n");
+        construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+        debug_msg((char *)oamresppkt->resppkt);
+#endif
+        memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+        goto endx;
+    }
+    //check...this could be 'help'
+    selhelp = 0;
+    if (argc == 1)
+    {
+        selhelp = 1;
+    }
+    else
+    {
+        if ((argc == 2) && (argv[1] == NULL))
+        {
+            memset(oammsg,0,MAX_RESPSTRING_SIZE);
+            sprintf((char *)oammsg, "Execution Error !\r\n@FAIL@\r\n");
+            construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+           debug_msg((char *)oamresppkt->resppkt);
+#endif
+           memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+           goto endx;
+        }
+        else
+        {
+            c1 = strncmp(argv[1], "help",strlen("help"));
+            c1x = strncmp(argv[1], "?",1);
+            if (c1 == 0 || c1x == 0)
+            {
+                selhelp = 1;
+            }
+        }
+    }
+    if(selhelp != 0)
+    {
+        construct_oam_large_template_responsepkt((uint8_t *)response_buf, RESPONSE_BUF_SIZE);
+         strcat(response_buf, logici2cwrrd.help_str);
+         strcat(response_buf, "\r\n");
+        //
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "Cmd String <%s> has 1 Arg :\r\n", logici2cwrrd.command_name);
+        strcat(response_buf, buf);
+        //
+        //ARG-1, <Group>
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "Arg-1 is <Count> %d-%d \r\n", MIN_TESTCOUNT, MAX_TESTCOUNT);
+        strcat(response_buf, buf);
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "E.G. %s 10\r\n", logici2cwrrd.command_name);
+        strcat(response_buf, buf);
+         //
+         strcat(response_buf, "Device shall carry out LOGIC I2C Registers Write/Read/Compare sequence <Count> times\r\n");
+         //
+        strcat((char *)response_buf, "@OK@\r\n##");
+         superlen = strlen(response_buf);
+         msglen = superlen - 10;
+         //
+         /////////////////////
+         memset(buf,0,sizeof(buf));
+         sprintf(buf,"$$[%04d]",msglen);
+         for(j=0;j<8;j++)
+         {
+            response_buf[j] = buf[j];
+         }
+ #if DEBUG
+        debug_msg((char *)response_buf);
+ #endif
+         /////////////////////
+         ret = RET_SUCCESS;
+         goto endx;
+    }
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //check arg[1] ChanNo 1-99
+    lenstr1 = strlen(argv[1]);
+    if(lenstr1 < 1 || lenstr1 > MAX_CMDSTRING_CHARS)
+    {
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg, "Illegal Argument 1 String Length !\r\nSYNTAX ERROR !\r\n@FAIL@\r\n");
+#if DEBUG
+        debug_msg((char *)oammsg);
+#endif
+        construct_oam_responsepkt(oammsg, oamresppkt);
+        memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+        goto endx;
+    }
+    ////////////////////////////////////////////////////////////////
+    flg = ConvertStrtoInt16(argv[1], lenstr1, &u16count);
+    if(flg != RET_SUCCESS)
+    {
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg,"Illegal Param COUNT !\r\nSYSTEM ERROR !\r\n@FAIL@\r\n");
+#if DEBUG
+        debug_msg((char *)oammsg);
+#endif
+        construct_oam_responsepkt(oammsg, oamresppkt);
+        memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+        goto endx;
+    }
+    ///////////////////////////////////////////////////////////////////////////
+    if(u16count < MIN_TESTCOUNT || u16count > MAX_TESTCOUNT)
+    {
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg, "Illegal <ChanNo> %d-%d or 'all' expected !\r\nSYNTAX ERROR !\r\n@FAIL@\r\n", MIN_TESTCOUNT, MAX_TESTCOUNT);
+#if DEBUG
+        debug_msg((char *)oammsg);
+#endif
+        construct_oam_responsepkt(oammsg, oamresppkt);
+        memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+        goto endx;
+    }
+    //////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////
+    //Normal Execution
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //BOOTSTEP-6, LOGIC Config
+    u8count = u16count;
+    ///////////////////////////////////////////////////////////////////
+    iwdg_strobpulse();
+    //
+    uint16_t etimes;
+    uint16_t etimem;
+    uint16_t rem;
+    etimes = u8count * 11;
+    if(etimes > 59)
+    {
+        etimem = etimes / 60;
+        rem = etimes % 60;
+        debug_msg("\r\nAPPROX TEST TIME: %d mins %d secs !\r\n", etimem, rem);
+    }
+    else
+    {
+        debug_msg("\r\nAPPROX TEST TIME: %d secs !\r\n", etimes);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////
+
+    uint8_t fcnt, pcnt;
+    fcnt = 0;
+    pcnt = 0;
+    for(j=0;j<u8count;j++)
+    {
+        flg = boot_logicconfig(&failstage, &testfailstep);
+        if(flg != 0)
+        {
+            debug_msg("Iteration %d, WRITE / READ (LOGIC Config Regs)..**FAILURE !, Stage %d, FailStep %d\r\n", j + 1, failstage, testfailstep);
+            fcnt++;
+        }
+        else
+        {
+            debug_msg("Iteration %d, WRITE / READ (LOGIC Config Regs)..PASS !\r\n", j + 1);
+            pcnt++;
+        }
+    }
+    ///////////////////////////////////////////////////////
+    //
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //VALID RESPONSE
+    if(fcnt == 0)
+    {
+
+        ret = RET_SUCCESS;
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg,"\r\nPASS COUNT:%d\r\nFAIL COUNT:%d\r\nSUCCESS\r\n@OK@\r\n",pcnt,fcnt);
+    }
+    else
+    {
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg,"PASS COUNT:%d\r\nFAIL COUNT:%d\r\nFAILURE !\r\n@FAIL@\r\n",pcnt,fcnt);
+    }
+    construct_oam_responsepkt(oammsg, oamresppkt);
+    memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+    //
+    //////////////////////////////////////////////////////////////////////
+    ////////////////
+    endx:
+    vPortFree(oammsg);
+    vPortFree(oamresppkt);
+    return ret;
+    ////////////////
+
+
+
+}
+
+
+
 
 void init_difcommand_list_comfactory_settings(void)
 {
 	//cli group CLIGROUP_COMFACTORYSET
-	//1- 3(3nos)
+	//1- 4(4nos)
 	add_command_to_list(&setcomserial);
 	add_command_to_list(&setcomdesc);
 	add_command_to_list(&wipemem);
+	add_command_to_list(&logici2cwrrd);
 	//
 }
 

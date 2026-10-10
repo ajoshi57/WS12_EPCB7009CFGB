@@ -22,12 +22,15 @@
 int handle_showcomversion(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 int handle_showcomsettings(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 int handle_showcomselftest(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
+int handle_showtripcounters(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 
 //////////////////////////////////////////////////////////////////////
 //
 static int construct_showcomversion_response(char *response_buf);
 static int construct_showcomsettings_response(char *response_buf);
 static int construct_showcomselftest_response(char *response_buf);
+static int construct_showtripcounters_response(char *response_buf);
+
 //
 //////////////////////////////////////////////////////////////////////
 //
@@ -64,6 +67,17 @@ CMDMSG_T showcomselftest =
  		AUTH_VIEWUSER,           //auth_level
  		&handle_showcomselftest  //handler fn
 };
+
+CMDMSG_T showtripcounters =
+{
+        "#showtripcounters#", //cmdstr
+        1,
+        "Show TRIP COUNTERS\r\n", //help_str
+        (CLIGROUP_CORECOMQUERY + 4), //command_id
+        AUTH_VIEWUSER,           //auth_level
+        &handle_showtripcounters  //handler fn
+};
+
 
 int handle_showcomversion(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
 {
@@ -675,16 +689,6 @@ int handle_showcomselftest(int argc, char **argv, uint8_t cmdkwlen, char *respon
 		goto endx;
 	}
 	ret = RET_SUCCESS;
-	//////////////////////////////////////////////////////////////////////
-    //READ Regs Config
-	int fstep;
-    flg = read_logiccfg(&g_LOGIC_RDCFG, &fstep, 1);
-    if(flg != 0)
-    {
-        //*failstage = 3;
-        //*testfailstep = fstep;
-        goto endx;
-    }
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	////////////////
 	endx:
@@ -693,6 +697,149 @@ int handle_showcomselftest(int argc, char **argv, uint8_t cmdkwlen, char *respon
 	return ret;
 	////////////////
 }
+
+int handle_showtripcounters(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
+{
+    //possibilities
+    //showcomsettings
+    //showcomsettings help
+    //showcomsettings ?
+    int c1 = 0;
+    int c1x = 0;
+    int selhelp = 0;
+    int ret = RET_FAIL;
+    uint16_t superlen,msglen ;
+    char buf[20];
+    int j;
+    int flg;
+    //
+    //================================================================================
+    uint8_t *oammsg = (uint8_t *) pvPortMalloc(sizeof(uint8_t) * MAX_RESPSTRING_SIZE);
+    if (oammsg == NULL)
+    {
+        debug_msg("\r\nhandle_showccsettings: FAIL Alloc Mem - 'oammsg'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    ///////////////////////////////////////////////////////////////////////////
+    VALIDRESP_T *oamresppkt = (VALIDRESP_T *) pvPortMalloc(sizeof(VALIDRESP_T));
+    if(oamresppkt == NULL)
+    {
+        debug_msg("\r\nhandle_showccsettings: FAIL Alloc Mem - 'VALIDRESP_T'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    //================================================================================
+    ///////////////////////////////
+    ///////////////////////////////
+    //
+    if (argc != 1 && argc != 2)
+    {
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg, "Incorrect Argument Count !\r\n");
+        strcat((char *)oammsg, "SYNTAX ERROR\r\n@FAIL@\r\n");
+        construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+        debug_msg((char *)oamresppkt->resppkt);
+#endif
+        memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+        goto endx;
+    }
+    //check...this could be 'help'
+    selhelp = 0;
+    if (argc == 1)
+    {
+        selhelp = 0;
+    }
+    else
+    {
+        if ((argc == 2) && (argv[1] == NULL))
+        {
+            memset(oammsg,0,MAX_RESPSTRING_SIZE);
+            sprintf((char *)oammsg, "Execution Error !\r\n@FAIL@\r\n");
+            construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+           debug_msg((char *)oamresppkt->resppkt);
+#endif
+           memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+           goto endx;
+        }
+        else
+        {
+            c1 = strncmp(argv[1], "help",strlen("help"));
+            c1x = strncmp(argv[1], "?",1);
+            if (c1 == 0 || c1x == 0)
+            {
+                selhelp = 1;
+            }
+            else
+            {
+                memset(oammsg,0,MAX_RESPSTRING_SIZE);
+                sprintf((char *)oammsg, "Execution Error !\r\n@FAIL@\r\n");
+                construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+               debug_msg((char *)oamresppkt->resppkt);
+#endif
+               memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+               goto endx;
+
+            }
+        }
+    }
+    //////////////////////////////////////////////////////////////////////
+    if(selhelp != 0)
+    {
+         construct_oam_large_template_responsepkt((uint8_t *)response_buf, RESPONSE_BUF_SIZE);
+        strncat(response_buf, showtripcounters.help_str, strlen(showtripcounters.help_str));
+        strcat(response_buf, "\r\n");
+        //
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "Cmd String <%s> has no Arguments\r\n", showtripcounters.command_name);
+        strcat(response_buf, buf);
+        //
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "E.G. %s <CR> \r\n", showtripcounters.command_name);
+        strcat(response_buf, buf);
+        //
+         strcat((char *)response_buf, "@OK@\r\n##");
+        superlen = strlen(response_buf);
+        msglen = superlen - 10;
+        //
+        /////////////////////
+        sprintf(buf,"$$[%04d]",msglen);
+        for(j=0;j<8;j++)
+        {
+            response_buf[j] = buf[j];
+        }
+#if DEBUG
+       debug_msg((char *)response_buf);
+#endif
+        /////////////////////
+        ret = RET_SUCCESS;
+        goto endx;
+        //
+    }
+    //////////////////////////////////////////////////////////////////////
+    //NORMAL EXECUTION
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Construct VALID RESPONSE
+    flg = construct_showtripcounters_response(response_buf);
+    if(flg != 0)
+    {
+        goto endx;
+    }
+    ret = RET_SUCCESS;
+    //////////////////////////////////////////////////////////////////////
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ////////////////
+    endx:
+    vPortFree(oammsg);
+    vPortFree(oamresppkt);
+    return ret;
+    ////////////////
+}
+
 
 static int construct_showcomversion_response(char *response_buf)
 {
@@ -1388,13 +1535,239 @@ static int construct_showcomselftest_response(char *response_buf)
 	/////////////////////
 }
 
+static int construct_showtripcounters_response(char *response_buf)
+{
+    int ret = RET_SUCCESS;
+    uint16_t superlen,msglen ;
+    char buf[100];
+    char source[MAX_TABLEENTRY_BUF];
+    char dest[MAX_TABLEENTRY_BUF];
+    int j;
+    //==================================================================
+    //==================================================================
+    uint32_t isvalidcfg;
+    uint8_t outputsource[MAX_OUTCHANS]; //16
+    //
+    //================================================================================
+    TRIPCNTRS_T *tripcntrs = (TRIPCNTRS_T *) pvPortMalloc(sizeof(TRIPCNTRS_T));
+    if(tripcntrs == NULL)
+    {
+        debug_msg("\r\nFAIL Alloc Mem - 'TRIPCNTRS_T'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    //================================================================================
+    copy_tripcntrs_mutex(tripcntrs);
+    //////////////////////////////////////////////////////////////////////
+    //Construct VALID RESPONSE
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    construct_oam_large_template_responsepkt((uint8_t *)response_buf, RESPONSE_BUF_SIZE);
+    ///////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
+    copy_oamcfgdbase_isvalid((uint8_t *)&isvalidcfg);
+    ///////////////////////////////////////////////////////////////
+    copy_oamcfgdbase_outputsource((uint8_t *)&outputsource[0]);
+    ///////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
+    strcat((char *)response_buf, "\r\n");
+    strcat((char *)response_buf, "TRIP COUNTERS...\r\n");
+    //===================================================================
+    if(isvalidcfg != VALIDDBASE)
+    {
+        strcat((char *)response_buf, "Config Not Valid !\r\n");
+        ret = RET_FAIL;
+        goto endx;
+    }
+    //===================================================================
+    //INPUT CHAN NO 1-4
+    memset(source,0,sizeof(source));
+    memset(dest,0,sizeof(dest));
+    sprintf((char *)source,"INPUT NO       ");
+    strcat((char *)response_buf, source);
+    for(j = 0;j < MAX_INCHANS;j++)
+    {
+        //add chan no
+        memset(source,0,sizeof(source));
+        memset(dest,0,sizeof(dest));
+        sprintf((char *)source,"%02d", j + 1);
+        add_spaces_tostr(source,dest,7);
+        strcat((char *)response_buf, dest);
+    }
+    strcat((char *)response_buf, "\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //TRIP COUNTERS
+    memset(source,0,sizeof(source));
+    memset(dest,0,sizeof(dest));
+    sprintf((char *)source,"INPUT TRIPS    ");
+    strcat((char *)response_buf, source);
+    for(j = 0;j < MAX_INCHANS;j++)
+    {
+        //add setting
+        memset(source,0,sizeof(source));
+        memset(dest,0,sizeof(dest));
+        ///////////////////
+        memset(buf,0,sizeof(buf));
+        sprintf((char *)source,"%d", tripcntrs->inputcnt[j] );
+        ///////////////////
+        add_spaces_tostr(source,dest,7);
+        strcat((char *)response_buf, dest);
+    }
+    strcat((char *)response_buf, "\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    strcat((char *)response_buf, "\r\n");
+    strcat((char *)response_buf, "OUTPUT SOURCE & TRIP COUNTS:\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //CHAN NO 1-8
+    memset(source,0,sizeof(source));
+    memset(dest,0,sizeof(dest));
+    sprintf((char *)source,"OUTPUT NO      ");
+    strcat((char *)response_buf, source);
+    for(j = 0;j < 8;j++)
+    {
+        //add chan no
+        memset(source,0,sizeof(source));
+        memset(dest,0,sizeof(dest));
+        sprintf((char *)source,"%02d", j + 1);
+        add_spaces_tostr(source,dest,7);
+        strcat((char *)response_buf, dest);
+    }
+    strcat((char *)response_buf, "\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //OUTPUT SOURCE SETTING 1-8
+    memset(source,0,sizeof(source));
+    memset(dest,0,sizeof(dest));
+    sprintf((char *)source,"OUTPUT SOURCE  ");
+    strcat((char *)response_buf, source);
+    for(j = 0;j < 8;j++)
+    {
+        //add setting
+        memset(source,0,sizeof(source));
+        memset(dest,0,sizeof(dest));
+        ///////////////////
+        memset(buf,0,sizeof(buf));
+        sprintf((char *)source,"%d", outputsource[j] );
+        ///////////////////
+        add_spaces_tostr(source,dest,7);
+        strcat((char *)response_buf, dest);
+    }
+    strcat((char *)response_buf, "\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //OUTPUT TRIP COUNTS 1-8
+    memset(source,0,sizeof(source));
+    memset(dest,0,sizeof(dest));
+    sprintf((char *)source,"OUTPUT TRIPS   ");
+    strcat((char *)response_buf, source);
+    for(j = 0;j < 8;j++)
+    {
+        //add setting
+        memset(source,0,sizeof(source));
+        memset(dest,0,sizeof(dest));
+        ///////////////////
+        memset(buf,0,sizeof(buf));
+        sprintf((char *)source,"%d", tripcntrs->outputcnt[j] );
+        ///////////////////
+        add_spaces_tostr(source,dest,7);
+        strcat((char *)response_buf, dest);
+    }
+    strcat((char *)response_buf, "\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //CHAN NO 9 - 16
+    memset(source,0,sizeof(source));
+    memset(dest,0,sizeof(dest));
+    sprintf((char *)source,"OUTPUT NO      ");
+    strcat((char *)response_buf, source);
+    for(j = 8;j < 16;j++)
+    {
+        //add chan no
+        memset(source,0,sizeof(source));
+        memset(dest,0,sizeof(dest));
+        sprintf((char *)source,"%02d", j + 1);
+        add_spaces_tostr(source,dest,7);
+        strcat((char *)response_buf, dest);
+    }
+    strcat((char *)response_buf, "\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //OUTPUT SOURCE 9-16
+    memset(source,0,sizeof(source));
+    memset(dest,0,sizeof(dest));
+    sprintf((char *)source,"OUTPUT SOURCE  ");
+    strcat((char *)response_buf, source);
+    for(j = 8;j < 16;j++)
+    {
+        //add setting
+        memset(source,0,sizeof(source));
+        memset(dest,0,sizeof(dest));
+        ///////////////////
+        memset(buf,0,sizeof(buf));
+        sprintf((char *)source,"%d", outputsource[j] );
+        ///////////////////
+        add_spaces_tostr(source,dest,7);
+        strcat((char *)response_buf, dest);
+    }
+    strcat((char *)response_buf, "\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //OUTPUT TRIP COUNTS 9-16
+    memset(source,0,sizeof(source));
+    memset(dest,0,sizeof(dest));
+    sprintf((char *)source,"OUTPUT TRIPS   ");
+    strcat((char *)response_buf, source);
+    for(j = 8;j < 16;j++)
+    {
+        //add setting
+        memset(source,0,sizeof(source));
+        memset(dest,0,sizeof(dest));
+        ///////////////////
+        memset(buf,0,sizeof(buf));
+        sprintf((char *)source,"%d", tripcntrs->outputcnt[j] );
+        ///////////////////
+        add_spaces_tostr(source,dest,7);
+        strcat((char *)response_buf, dest);
+    }
+    strcat((char *)response_buf, "\r\n");
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ///////////////////////////////////////////////////////////////
+    endx:
+    if(ret == RET_SUCCESS)
+        strcat((char *)response_buf, "@OK@\r\n##");
+    else
+        strcat((char *)response_buf, "@FAIL@\r\n##");
+    superlen = strlen(response_buf);
+    msglen = superlen - 10;
+    //
+    /////////////////////
+    memset(buf,0,sizeof(buf));
+    sprintf(buf,"$$[%04d]",msglen);
+    for(j=0;j<8;j++)
+    {
+        response_buf[j] = buf[j];
+    }
+    /////////////////////
+#if DEBUG
+    debug_msg("Sent Response to OAM...\r\n");
+#endif
+    //
+    /////////////////////
+    return ret;
+    /////////////////////
+    ///////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
+}
+
+
 void init_difcommand_list_core_comqueries(void)
 {
   	//cli group CLIGROUP_COMCOREQUERY
-  	//1- 3(3nos)
+  	//1- 4(4nos)
   	add_command_to_list(&showcomversion);
   	add_command_to_list(&showcomselftest);
   	add_command_to_list(&showcomsettings);
+  	add_command_to_list(&showtripcounters);
   	//
 
 }

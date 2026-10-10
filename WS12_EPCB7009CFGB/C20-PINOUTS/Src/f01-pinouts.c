@@ -24,6 +24,7 @@ void PinoutSet_UART0Console( void );
 void PinoutSet_epcb7011_gpios(void);
 //
 void PinoutSet_i2c0_twi0(void);
+void PinoutSet_i2c1_twi1(void);
 
 
 //fns defined here...
@@ -97,7 +98,7 @@ void PinoutSet_UART0Console( void )
     /* config */
     UARTStdioConfig(0, 115200, g_ui32SysClock);
     //
-    IntMasterEnable();
+    //IntMasterEnable();
     //
     // Enable the UART interrupt.
     //
@@ -178,7 +179,7 @@ void PinoutSet_i2c0_twi0(void)
     //
 }
 
-PinoutSet_i2c1_twi1(void)
+void PinoutSet_i2c1_twi1(void)
 {
     // Enable Peripheral Clocks
     MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);

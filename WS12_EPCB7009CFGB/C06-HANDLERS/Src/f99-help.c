@@ -130,7 +130,7 @@ int handle_difhelp(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
         strcat(response_buf, "Cmd String <#help#> has 1 Arg :\r\n");
         //ARG-1
         strcat(response_buf, "Arg-1 <cat> is one of the following:\r\n");
-        strcat(response_buf, "<all>, <coreset>, <coreq> \r\n");
+        strcat(response_buf, "<all>, <coreset>, <coreq>, <factset>, <factq> \r\n");
         strcat(response_buf, "E.G. #help# all\r\n");
         //
 
@@ -357,15 +357,18 @@ void init_dif_cli_command_list_all(void)
 	//1 cmd
 	init_dif_clicommand_list_help();
 	//
-	//4 cmds
+	//6 cmds
 	init_difcommand_list_core_comsettings();
 	//
 	//3 cmds
     init_difcommand_list_core_comqueries();
     //
-    //2 cmds
+    //3 cmds
     init_difcommand_list_comfactory_settings();
     //
+    //1 cmd
+    init_difcommand_list_comfactory_queries();
+
     //
 }
 
@@ -477,11 +480,11 @@ void get_help_coreq(int add_hlp_str,char *response_buf)
 void get_help_fact(int add_hlp_str,char *response_buf)
 {
 	char buf[10] = {'\0'};
-	sprintf(buf,"[%d] :\r\n", TOTAL_ALLFACTSET_CMDS);
-	strcat(response_buf,"CC FACTORY CLI Commands ");
+	sprintf(buf,"[%d] :\r\n", TOTAL_ALLFACTSET_CMDS + TOTAL_ALLFACTQ_CMDS);
+	strcat(response_buf,"FACTORY CLI Commands ");
 	strncat(response_buf,buf, strlen(buf));
 	//
-	get_help_part(HELP_ALLFACTSET_FIRST,HELP_ALLFACTSET_LAST,add_hlp_str,response_buf);
+	get_help_part(HELP_ALLFACTSET_FIRST,HELP_ALLFACTQ_LAST,add_hlp_str,response_buf);
 	//
 }
 

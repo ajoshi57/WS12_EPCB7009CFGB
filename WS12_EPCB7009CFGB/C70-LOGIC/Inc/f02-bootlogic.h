@@ -27,6 +27,8 @@
 #include "f99-logic-struct.h"
 //
 
+int boot_logic(LOGICPARAMS_T *logicparams, int *testfailstep);
+void construct_logicparams(LOGICPARAMS_T *logicparams, char *uidstr, char *reldatestr);
 
 
 

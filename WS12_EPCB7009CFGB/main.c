@@ -129,11 +129,14 @@ int main( void )
     //vUARTTask();
     /*******************************/
     InitI2C1();
-
-
     /*******************************/
     /* EEPROM SETTINGS */
     init_eeprom();
+    /////////////////////////////////
+    //EXTERNAL INTRS
+    configure_ext_gpio_inputs();
+    setup_ext_gpio_intrs();
+    /////////////////////////////////
 #if 0
     SysCtlPeripheralEnable(SYSCTL_PERIPH_EEPROM0); // EEPROM activate
     do
@@ -176,6 +179,12 @@ int main( void )
         }
     }
     if(create_mutex_access_tripcntrs() != 0)
+    {
+        while (1)
+        {
+        }
+    }
+    if(create_mutex_access_fetchalarms() != 0)
     {
         while (1)
         {

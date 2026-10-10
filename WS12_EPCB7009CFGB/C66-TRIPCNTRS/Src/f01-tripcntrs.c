@@ -5,7 +5,7 @@
  *      Author: Arvind Joshi
  */
 
-#define DEBUGLOG 0
+#define DEBUG 0
 
 #include "f01-tripcntrs.h"
 
@@ -24,7 +24,7 @@ extern OAMCFGDBASE_T g_CFG_DBASE;
 //fns protos defined here...
 int create_mutex_access_tripcntrs(void);
 int init_tripcntrs_mutex(void);
-int incr_tripcntrs_mutex(uint8_t inputno);
+int incr_tripcntrs_mutex(uint8_t inputno, ALARMENTRY_T *alarmentry);
 int copy_tripcntrs_mutex(TRIPCNTRS_T *tripcntrs);
 //
 
@@ -74,10 +74,11 @@ int init_tripcntrs_mutex(void)
     return ret;
 }
 
-int incr_tripcntrs_mutex(uint8_t inputno)
+int incr_tripcntrs_mutex(uint8_t inputno, ALARMENTRY_T *alarmentry)
 {
     int ret = 0;
     int j;
+    uint8_t mappedoutno = 0;
 
     if( xSemaphoreTake( g_mutex_access_tripcntrs, ( TickType_t ) 10 ) == pdTRUE )
     {
@@ -89,9 +90,6 @@ int incr_tripcntrs_mutex(uint8_t inputno)
         }
         else
         {
-
-            void copy_oamcfgdbase_global(uint8_t *data);
-
             //==========================================================
             //Input Pulses
             g_TRIPCNTRS.inputcnt[inputno - 1]++;
@@ -100,7 +98,11 @@ int incr_tripcntrs_mutex(uint8_t inputno)
                 g_TRIPCNTRS.inputcnt[inputno - 1] = 0;
             }
             //==========================================================
+            alarmentry->curinputno = inputno;
+            alarmentry->tripcnt = g_TRIPCNTRS.inputcnt[inputno - 1];
+            //==========================================================
             //Output Pulses
+            mappedoutno = 0;
             for(j=0;j<MAX_OUTCHANS;j++)
             {
                 if(g_CFG_DBASE.outputsource[j] == inputno)
@@ -110,8 +112,14 @@ int incr_tripcntrs_mutex(uint8_t inputno)
                     {
                         g_TRIPCNTRS.outputcnt[j] = 0;
                     }
+                    alarmentry->isoutputmapped[j] = 1;
+                }
+                else
+                {
+                    alarmentry->isoutputmapped[j] = 0;
                 }
             }
+            //==========================================================
             //==========================================================
         }
         //////////////////////////////////////////////

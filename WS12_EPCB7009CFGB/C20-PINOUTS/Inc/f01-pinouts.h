@@ -46,5 +46,6 @@ void PinoutSet_i2c1_logic(void);
 void PinoutSet_UART0Console( void );
 void PinoutSet_epcb7011_gpios(void);
 void PinoutSet_i2c0_twi0(void);
+void PinoutSet_i2c1_twi1(void);
 
 #endif /* INC_F01_WATCHDOG_H_ */

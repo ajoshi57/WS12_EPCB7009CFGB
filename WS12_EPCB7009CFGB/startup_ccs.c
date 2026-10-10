@@ -57,6 +57,7 @@ static void IntDefaultHandler(void);
 extern void _c_int00(void);
 extern void UART0IntHandler(void);
 extern void WatchdogIntHandler(void);
+extern void GPIO_PortH_Ext_Intr_Handler(void);
 //*****************************************************************************
 //
 // Linker variable that marks the top of the stack.
@@ -132,7 +133,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // FLASH Control
     IntDefaultHandler,                      // GPIO Port F
     IntDefaultHandler,                      // GPIO Port G
-    IntDefaultHandler,                      // GPIO Port H
+    GPIO_PortH_Ext_Intr_Handler,                      // GPIO Port H
     IntDefaultHandler,                      // UART2 Rx and Tx
     IntDefaultHandler,                      // SSI1 Rx and Tx
     IntDefaultHandler,                      // Timer 3 subtimer A
