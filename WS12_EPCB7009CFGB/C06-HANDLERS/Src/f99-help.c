@@ -1,7 +1,7 @@
 /****************************************************
   FILE NAME		: f99-help.c
   ORIGINATOR	: A Joshi
-  LAST EDITED   : 18 OCT 2025
+  LAST EDITED   : 12 OCT 2026
   PROJECT       : WS12_EPCB7011
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
@@ -130,7 +130,7 @@ int handle_difhelp(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
         strcat(response_buf, "Cmd String <#help#> has 1 Arg :\r\n");
         //ARG-1
         strcat(response_buf, "Arg-1 <cat> is one of the following:\r\n");
-        strcat(response_buf, "<all>, <coreset>, <coreq>, <factset>, <factq> \r\n");
+        strcat(response_buf, "<all>, <coreset>, <coreq> \r\n");
         strcat(response_buf, "E.G. #help# all\r\n");
         //
 

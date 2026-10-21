@@ -99,12 +99,12 @@ void init_oamcfgdbase_defaults(OAMCFGDBASE_T *data)
 	//DEFAULT SETTINGS FOR GLITCH FILTER AND OUTPUT PULSE
 	for(j = 0;j < MAX_INCHANS;j++)
 	{
-		oamcfgdbase->glitchfilter[j] = 8; //5MS
+		oamcfgdbase->glitchfilter[j] = 0; //0.5MS
 	}
     ////////////////////////////////////////////////////////////////
 	for(j = 0;j < MAX_OUTCHANS;j++)
 	{
-		oamcfgdbase->outputpulse[j] = SET_PULSE200MS; //200MS
+		oamcfgdbase->outputpulse[j] = SET_PULSE050MS; //200MS
 	}
 	////////////////////////////////////////////////////////////////
     for(k = 0;k < 4;k++)

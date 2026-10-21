@@ -1955,6 +1955,7 @@ int handle_cleartripcounters(int argc, char **argv, uint8_t cmdkwlen, char *resp
     //Normal Execution
     init_tripcntrs_mutex();
     flush_fetchalarms_mutex();
+    clear_alarmrelay();
     /////////////////////////////
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //////////////////////////////////////////////////////////////////////

@@ -1,8 +1,8 @@
 /****************************************************
   FILE NAME     : f04-logicdefcfg.c
   ORIGINATOR    : A Joshi
-  LAST EDITED   : 16 JUN 2026
-  PROJECT       : WS12_EPCB7011
+  LAST EDITED   : 16 OCT 2026
+  PROJECT       : WS12_EPCB7009
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
   PLL Oper      : 480MHz
@@ -26,6 +26,7 @@ int read_logiccfg(LOGICCFG_T *logiccfg, int *testfailstep, int debugon);
 static int validate_reggf(uint8_t rdata);
 static int validate_regpw(uint8_t rdata);
 static int validate_regmap(uint8_t rdata);
+static int validate_enabalarm(uint8_t rdata);
 static int construct_logiccfg(OAMCFGDBASE_T *cfgdbase,LOGICCFG_T *logiccfg, int *testfailstep);
 static int write_logiccfg(LOGICCFG_T *logiccfg, int *testfailstep);
 static int compare_logiccfg(LOGICCFG_T *wrlogiccfg, LOGICCFG_T *rdlogiccfg, int *testfailstep);
@@ -35,6 +36,10 @@ int boot_logicconfig(int *failstage, int *testfailstep);
 int program_gf(uint8_t channo, uint8_t gfvalue, int debugon);
 int program_pw(uint8_t channo, uint8_t pwvalue, int debugon);
 int program_map(uint8_t channo, uint8_t mapvalue, int debugon);
+//
+static int reevaluate_enabalarm(OAMCFGDBASE_T *cfgdbase, uint8_t *newenabalarm);
+//
+int clear_alarmrelay(void);
 
 //fn protos defined here...
 /*****************************************************************************
@@ -131,7 +136,7 @@ int read_logiccfg(LOGICCFG_T *logiccfg, int *testfailstep, int debugon)
         }
         else
         {
-            //Validate PW
+            //Validate
             if(validate_regmap(rdata & 0x0F) == 0)
             {
                 logiccfg->regmap[j] = rdata & 0x0F;
@@ -146,6 +151,32 @@ int read_logiccfg(LOGICCFG_T *logiccfg, int *testfailstep, int debugon)
         }
         vTaskDelay(100);
     }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Read Cycle enabalarm
+    fstep++;
+    addr = 41;
+    flg = twi1logic_readcycle(0, addr, &rdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_read_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+        //Validate
+        if(validate_enabalarm(rdata & 0x0F) == 0)
+        {
+            logiccfg->enabalarm = rdata & 0x0F;
+            if(debugon != 0)
+                debug_msg("SUCCESS READ Valid enabalarm Addr %02XH Data %02XH\r\n", addr, (rdata & 0x0F) );
+        }
+        else
+        {
+            debug_msg("ERROR, Illegal enabalarm val %d !\r\n", (rdata & 0x0F) );
+            goto endx;
+        }
+    }
+    vTaskDelay(100);
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     logiccfg->valid = 1;
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -194,6 +225,18 @@ static int validate_regmap(uint8_t rdata)
     return ret;
 }
 
+static int validate_enabalarm(uint8_t rdata)
+{
+    int ret = 0;
+    //
+    if(rdata > 0x0F)
+    {
+        ret = -1;
+    }
+    return ret;
+}
+
+
 static int construct_logiccfg(OAMCFGDBASE_T *cfgdbase,LOGICCFG_T *logiccfg, int *testfailstep)
 {
     int ret = -1;
@@ -201,6 +244,11 @@ static int construct_logiccfg(OAMCFGDBASE_T *cfgdbase,LOGICCFG_T *logiccfg, int 
     uint32_t fstep;
     //uint8_t page = 0;
     uint8_t addr, rdata;
+    uint8_t found1 = 0;
+    uint8_t found2 = 0;
+    uint8_t found3 = 0;
+    uint8_t found4 = 0;
+    uint8_t enabalarm = 0;
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     logiccfg->valid = 0;
     fstep = 0; //starting
@@ -258,6 +306,26 @@ static int construct_logiccfg(OAMCFGDBASE_T *cfgdbase,LOGICCFG_T *logiccfg, int 
 #if DEBUG
             debug_msg("SUCCESS CONSTRUCT MAP[%d] Data %02X\r\n", j + 1, logiccfg->regmap[j] );
 #endif
+            if(logiccfg->regmap[j] == 1)
+            {
+                found1 = 1;
+                enabalarm |= 0x01;
+            }
+            else if(logiccfg->regmap[j] == 2)
+            {
+                found2 = 1;
+                enabalarm |= 0x02;
+            }
+            else if(logiccfg->regmap[j] == 3)
+            {
+                found3 = 1;
+                enabalarm |= 0x04;
+            }
+            else if(logiccfg->regmap[j] == 4)
+            {
+                found4 = 1;
+                enabalarm |= 0x08;
+            }
         }
         else
         {
@@ -265,6 +333,12 @@ static int construct_logiccfg(OAMCFGDBASE_T *cfgdbase,LOGICCFG_T *logiccfg, int 
             goto endx;
         }
     }
+#if DEBUG
+            debug_msg("ENABALARM byte #41 %02X\r\n", enabalarm );
+#endif
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //ENABALARM byte as per found
+    logiccfg->enabalarm = enabalarm;
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     logiccfg->valid = 1;
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -360,6 +434,26 @@ static int write_logiccfg(LOGICCFG_T *logiccfg, int *testfailstep)
         vTaskDelay(100);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Write Cycle enabalarm
+    fstep++;
+    addr = 41;
+    wdata = logiccfg->enabalarm & 0x0F;
+    flg = twi1logic_writecycle(0, addr, wdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_write_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+#if DEBUG
+        debug_msg("SUCCESS Write enabalarm Addr %02X Data %02X\r\n", addr, wdata);
+#endif
+    }
+    vTaskDelay(100);
+
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     logiccfg->valid = 1;
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     /////////
@@ -432,7 +526,7 @@ static int compare_logiccfg(LOGICCFG_T *wrlogiccfg, LOGICCFG_T *rdlogiccfg, int 
         fstep++;
         if(wrlogiccfg->regmap[j] != rdlogiccfg->regmap[j])
         {
-            debug_msg("ERROR, MisMatch MAP[%d] rd %02X wr %02X!\r\n", j + 1, wrlogiccfg->regmap[j], rdlogiccfg->regmap[j] );
+            debug_msg("ERROR, MisMatch MAP[%d] wr %02X rd %02X!\r\n", j + 1, wrlogiccfg->regmap[j], rdlogiccfg->regmap[j] );
             goto endx;
         }
         else
@@ -441,8 +535,25 @@ static int compare_logiccfg(LOGICCFG_T *wrlogiccfg, LOGICCFG_T *rdlogiccfg, int 
             debug_msg("SUCCESS MATCH MAP[%d]\r\n", j + 1);
 #endif
         }
-   }
+    }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Compare enabalarm Reg #41
+    if(wrlogiccfg->enabalarm != rdlogiccfg->enabalarm)
+    {
+        debug_msg("ERROR, MisMatch enabalarm wr %02XH rd %02XH !\r\n", j + 1, wrlogiccfg->enabalarm, rdlogiccfg->enabalarm );
+        goto endx;
+    }
+    else
+    {
+#if DEBUG
+        debug_msg("SUCCESS enabalarm\r\n");
+#endif
+    }
+
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
     /////////
     fstep = 0;
     ret = 0;
@@ -799,13 +910,130 @@ int program_map(uint8_t channo, uint8_t mapvalue, int debugon)
         }
     }
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    //
+    uint8_t newenabalarm;
+    flg = reevaluate_enabalarm(&g_CFG_DBASE, &newenabalarm);
+    if(flg != 0)
+    {
+        goto endx;
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Write Cycle enabalarm
+    addr = 41;
+    wdata = newenabalarm;
+    flg = twi1logic_writecycle(0, addr, wdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_write_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+#if DEBUG
+        debug_msg("SUCCESS Write enabalarm Addr %02X Data %02X\r\n", addr, wdata);
+#endif
+    }
+    vTaskDelay(100);
+
+    ////////////////
     ret = 0;
     //
     ////////////////
     endx:
     return ret;
     ////////////////
+    //
+}
+
+static int reevaluate_enabalarm(OAMCFGDBASE_T *cfgdbase, uint8_t *newenabalarm)
+{
+    uint8_t outputsource, tenabalarm;
+    tenabalarm = 0;
+    int j, ret = 0;
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     for(j = 0;j < MAX_OUTCHANS;j++)
+     {
+         if(validate_regmap(cfgdbase->outputsource[j] & 0x0F) == 0)
+         {
+             outputsource = cfgdbase->outputsource[j] & 0x0F;
+ #if DEBUG
+             debug_msg("SUCCESS CONSTRUCT MAP[%d] Data %02X\r\n", j + 1, outputsource );
+ #endif
+             if(outputsource == 1)
+             {
+                 tenabalarm |= 0x01;
+             }
+             else if(outputsource == 2)
+             {
+                 tenabalarm |= 0x02;
+             }
+             else if(outputsource == 3)
+             {
+                 tenabalarm |= 0x04;
+             }
+             else if(outputsource == 4)
+             {
+                 tenabalarm |= 0x08;
+             }
+         }
+         else
+         {
+             debug_msg("ERROR, Illegal MAP[%d] val %d !\r\n", j + 1, (cfgdbase->outputsource[j] & 0x0F) );
+             ret = -1;
+             goto endx;
+         }
+     }
+     /////////////////////////////
+     endx:
+     *newenabalarm = tenabalarm;
+     return ret;
+     /////////////////////////////
+     //
+}
+
+int clear_alarmrelay(void)
+{
+    int ret = -1;
+    int c1,c2,j,flg;
+    uint8_t addr,wdata,rdata,exdata;
+    //
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Write Cycle nclearalarm
+    addr = 42;
+    wdata = 0x0;
+    flg = twi1logic_writecycle(0, addr, wdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_write_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+#if DEBUG
+        debug_msg("SUCCESS Write nclearalarm Addr %02X Data %02X\r\n", addr, wdata);
+#endif
+    }
+    vTaskDelay(100);
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Write Cycle nclearalarm
+    addr = 42;
+    wdata = 0x01;
+    flg = twi1logic_writecycle(0, addr, wdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_write_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+#if DEBUG
+        debug_msg("SUCCESS Write nclearalarm Addr %02X Data %02X\r\n", addr, wdata);
+#endif
+    }
+    vTaskDelay(100);
+    ret = 0;
+    endx:
+    return ret;
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //
 }
 

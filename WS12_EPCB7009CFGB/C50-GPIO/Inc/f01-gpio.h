@@ -36,7 +36,7 @@ void drive_ncslogic(uint8_t lev); //not used for I2C
 void setup_gpio_defaults(void);
 void logic_reset_pulse(void);
 //
-
+void get_alarmrelay_status(uint8_t *status);
 
 
 

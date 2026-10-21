@@ -1,7 +1,7 @@
 /****************************************************
   FILE NAME		: f01-core-comqueries.c
   ORIGINATOR	: A Joshi
-  LAST EDITED   : 13 JUN 2026
+  LAST EDITED   : 16 OCT 2026
   PROJECT       : WS12_EPCB7011
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
@@ -23,13 +23,14 @@ int handle_showcomversion(int argc, char **argv, uint8_t cmdkwlen, char *respons
 int handle_showcomsettings(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 int handle_showcomselftest(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 int handle_showtripcounters(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
-
+int handle_showalarmrelay(int argc, char **argv, uint8_t cmdkwlen, char *response_buf);
 //////////////////////////////////////////////////////////////////////
 //
 static int construct_showcomversion_response(char *response_buf);
 static int construct_showcomsettings_response(char *response_buf);
 static int construct_showcomselftest_response(char *response_buf);
 static int construct_showtripcounters_response(char *response_buf);
+static int construct_showalarmrelay_response(char *response_buf);
 
 //
 //////////////////////////////////////////////////////////////////////
@@ -76,6 +77,16 @@ CMDMSG_T showtripcounters =
         (CLIGROUP_CORECOMQUERY + 4), //command_id
         AUTH_VIEWUSER,           //auth_level
         &handle_showtripcounters  //handler fn
+};
+
+CMDMSG_T showalarmrelay =
+{
+        "#showalarmrelay#", //cmdstr
+        1,
+        "Show ALARM RELAY STATUS\r\n", //help_str
+        (CLIGROUP_CORECOMQUERY + 5), //command_id
+        AUTH_VIEWUSER,           //auth_level
+        &handle_showalarmrelay  //handler fn
 };
 
 
@@ -839,6 +850,150 @@ int handle_showtripcounters(int argc, char **argv, uint8_t cmdkwlen, char *respo
     return ret;
     ////////////////
 }
+
+int handle_showalarmrelay(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
+{
+    //possibilities
+    //showalarmrelay
+    //showalarmrelay help
+    //showalarmrelay ?
+    int c1 = 0;
+    int c1x = 0;
+    int selhelp = 0;
+    int ret = RET_FAIL;
+    uint16_t superlen,msglen ;
+    char buf[20];
+    int j;
+    int flg;
+    //
+    //================================================================================
+    uint8_t *oammsg = (uint8_t *) pvPortMalloc(sizeof(uint8_t) * MAX_RESPSTRING_SIZE);
+    if (oammsg == NULL)
+    {
+        debug_msg("\r\nhandle_showccsettings: FAIL Alloc Mem - 'oammsg'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    ///////////////////////////////////////////////////////////////////////////
+    VALIDRESP_T *oamresppkt = (VALIDRESP_T *) pvPortMalloc(sizeof(VALIDRESP_T));
+    if(oamresppkt == NULL)
+    {
+        debug_msg("\r\nhandle_showccsettings: FAIL Alloc Mem - 'VALIDRESP_T'\r\n");
+        while (1)
+            ;   //stuck here
+    }
+    //================================================================================
+    ///////////////////////////////
+    ///////////////////////////////
+    //
+    if (argc != 1 && argc != 2)
+    {
+        memset(oammsg,0,MAX_RESPSTRING_SIZE);
+        sprintf((char *)oammsg, "Incorrect Argument Count !\r\n");
+        strcat((char *)oammsg, "SYNTAX ERROR\r\n@FAIL@\r\n");
+        construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+        debug_msg((char *)oamresppkt->resppkt);
+#endif
+        memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+        goto endx;
+    }
+    //check...this could be 'help'
+    selhelp = 0;
+    if (argc == 1)
+    {
+        selhelp = 0;
+    }
+    else
+    {
+        if ((argc == 2) && (argv[1] == NULL))
+        {
+            memset(oammsg,0,MAX_RESPSTRING_SIZE);
+            sprintf((char *)oammsg, "Execution Error !\r\n@FAIL@\r\n");
+            construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+           debug_msg((char *)oamresppkt->resppkt);
+#endif
+           memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+           goto endx;
+        }
+        else
+        {
+            c1 = strncmp(argv[1], "help",strlen("help"));
+            c1x = strncmp(argv[1], "?",1);
+            if (c1 == 0 || c1x == 0)
+            {
+                selhelp = 1;
+            }
+            else
+            {
+                memset(oammsg,0,MAX_RESPSTRING_SIZE);
+                sprintf((char *)oammsg, "Execution Error !\r\n@FAIL@\r\n");
+                construct_oam_responsepkt(oammsg, oamresppkt);
+#if DEBUG
+               debug_msg((char *)oamresppkt->resppkt);
+#endif
+               memcpy(response_buf, oamresppkt->resppkt, oamresppkt->totallen );
+               goto endx;
+
+            }
+        }
+    }
+    //////////////////////////////////////////////////////////////////////
+    if(selhelp != 0)
+    {
+         construct_oam_large_template_responsepkt((uint8_t *)response_buf, RESPONSE_BUF_SIZE);
+        strncat(response_buf, showalarmrelay.help_str, strlen(showalarmrelay.help_str));
+        strcat(response_buf, "\r\n");
+        //
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "Cmd String <%s> has no Arguments\r\n", showalarmrelay.command_name);
+        strcat(response_buf, buf);
+        //
+        memset(buf,0,sizeof(buf));
+        sprintf(buf, "E.G. %s <CR> \r\n", showalarmrelay.command_name);
+        strcat(response_buf, buf);
+        //
+         strcat((char *)response_buf, "@OK@\r\n##");
+        superlen = strlen(response_buf);
+        msglen = superlen - 10;
+        //
+        /////////////////////
+        sprintf(buf,"$$[%04d]",msglen);
+        for(j=0;j<8;j++)
+        {
+            response_buf[j] = buf[j];
+        }
+#if DEBUG
+       debug_msg((char *)response_buf);
+#endif
+        /////////////////////
+        ret = RET_SUCCESS;
+        goto endx;
+        //
+    }
+    //////////////////////////////////////////////////////////////////////
+    //NORMAL EXECUTION
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Construct VALID RESPONSE
+    flg = construct_showalarmrelay_response(response_buf);
+    if(flg != 0)
+    {
+        goto endx;
+    }
+    ret = RET_SUCCESS;
+    //////////////////////////////////////////////////////////////////////
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ////////////////
+    endx:
+    vPortFree(oammsg);
+    vPortFree(oamresppkt);
+    return ret;
+    ////////////////
+}
+
+
 
 
 static int construct_showcomversion_response(char *response_buf)
@@ -1759,15 +1914,76 @@ static int construct_showtripcounters_response(char *response_buf)
     ///////////////////////////////////////////////////////////////
 }
 
+static int construct_showalarmrelay_response(char *response_buf)
+{
+    int ret = RET_SUCCESS;
+    uint16_t superlen,msglen ;
+    char buf[100];
+    int j;
+    uint8_t status;
+    //==================================================================
+    //
+    //////////////////////////////////////////////////////////////////////
+    //Construct VALID RESPONSE
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    construct_oam_large_template_responsepkt((uint8_t *)response_buf, RESPONSE_BUF_SIZE);
+    ///////////////////////////////////////////////////////////////
+    get_alarmrelay_status(&status);
+    ///////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
+    strcat((char *)response_buf, "\r\n");
+    if(status != 0)
+    {
+    strcat((char *)response_buf, "ALARM STATUS: **ACTIVE\r\n");
+    strcat((char *)response_buf, "              (RELAY IS OFF, FAIL-SAFE OPERATION)\r\n");
+    }
+    else
+    {
+    strcat((char *)response_buf, "ALARM STATUS: INACTIVE\r\n");
+    strcat((char *)response_buf, "              (RELAY IS ON, FAIL-SAFE OPERATION)\r\n");
+    }
+    //===================================================================
+    //
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ///////////////////////////////////////////////////////////////
+    if(ret == RET_SUCCESS)
+        strcat((char *)response_buf, "@OK@\r\n##");
+    else
+        strcat((char *)response_buf, "@FAIL@\r\n##");
+    superlen = strlen(response_buf);
+    msglen = superlen - 10;
+    //
+    /////////////////////
+    memset(buf,0,sizeof(buf));
+    sprintf(buf,"$$[%04d]",msglen);
+    for(j=0;j<8;j++)
+    {
+        response_buf[j] = buf[j];
+    }
+    /////////////////////
+#if DEBUG
+    debug_msg("Sent Response to OAM...\r\n");
+#endif
+    //
+    /////////////////////
+    return ret;
+    /////////////////////
+    ///////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
+}
+
+
 
 void init_difcommand_list_core_comqueries(void)
 {
   	//cli group CLIGROUP_COMCOREQUERY
-  	//1- 4(4nos)
+  	//1- 5(5nos)
   	add_command_to_list(&showcomversion);
   	add_command_to_list(&showcomselftest);
   	add_command_to_list(&showcomsettings);
   	add_command_to_list(&showtripcounters);
+  	add_command_to_list(&showalarmrelay);
   	//
 
 }

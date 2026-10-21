@@ -30,6 +30,8 @@ void drive_ncslogic(uint8_t lev); //not used for I2C
 void setup_gpio_defaults(void);
 void logic_reset_pulse(void);
 //
+void get_alarmrelay_status(uint8_t *status);
+//
 //Fns defined here...
 void drive_nresetlogic(uint8_t lev)
 {
@@ -199,7 +201,7 @@ void setup_gpio_defaults(void)
 	drive_i2cdevno(0);
 	drive_ledselftest(0);
 	//
-    drive_noamcomen(1); //low to enable handsahake signals on CLI RJ45
+    drive_noamcomen(0); //low to enable handsahake signals on CLI RJ45
     drive_cardalarm(0);
     drive_cardready(0);
     //
@@ -226,3 +228,13 @@ void logic_reset_pulse(void)
 #endif
 }
 //#################################################################
+
+
+
+void get_alarmrelay_status(uint8_t *status)
+{
+    int32_t i32Val;
+    i32Val=GPIOPinRead(GPIO_PORTK_BASE,GPIO_PIN_2);
+    *status = (i32Val >> 2) & 0x01;
+}
+

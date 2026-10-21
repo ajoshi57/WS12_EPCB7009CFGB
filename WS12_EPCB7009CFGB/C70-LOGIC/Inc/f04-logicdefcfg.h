@@ -1,7 +1,7 @@
 /****************************************************
   FILE NAME     : f04-logicdefcfg.h
   ORIGINATOR    : A Joshi
-  LAST EDITED   : 16 JUN 2026
+  LAST EDITED   : 16 OCT 2026
   PROJECT       : WS12_EPCB7011
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
@@ -33,6 +33,8 @@ int boot_logicconfig(int *failstage, int *testfailstep);
 int program_gf(uint8_t channo, uint8_t gfvalue, int debugon);
 int program_pw(uint8_t channo, uint8_t pwvalue, int debugon);
 int program_map(uint8_t channo, uint8_t mapvalue, int debugon);
+//
+int clear_alarmrelay(void);
 
 
 

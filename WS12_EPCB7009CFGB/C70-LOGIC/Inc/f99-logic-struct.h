@@ -28,6 +28,7 @@ typedef struct __attribute__((__packed__))  _logiccfg_
     uint8_t reggf[4];   //Glitch Filter Regs 1-4 #31-#34
     uint8_t regpw[16];  //Pulse Width Regs 1-16 #11-#26
     uint8_t regmap[16]; //Ouput Source Regs 1-16 #51-66
+    uint8_t enabalarm;  //4-bits (LSB) define Reg #41 (bits 3-0 enable alarm due to Inputs 4-1)
 } LOGICCFG_T;
 
 
