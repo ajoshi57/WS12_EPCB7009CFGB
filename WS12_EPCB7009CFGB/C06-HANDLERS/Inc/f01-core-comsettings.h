@@ -29,6 +29,8 @@
 #include "f04-configdbase.h"
 #include "f02-dbase-access.h"
 #include "f04-logicdefcfg.h"
+#include "f01-tripcntrs.h"
+#include "f03-fetchalarm-task.h"
 
 void init_difcommand_list_core_comsettings(void);
 

@@ -99,7 +99,7 @@
 #define CFG_DESC04 "16 Output Channels mapped to 4 Inputs in any combination "
 #define CFG_DESC05 "Same input maybe mapped to multiple outputs"
 //
-#define CFG_FWVER "F/W Ver:1.0.0 Rel 23OCT2026 0930Hrs"
+#define CFG_FWVER "F/W Ver:1.0.0 Rel 23OCT2026 1100Hrs"
 /////////////////////////////////////////////////////////
 
 //UARTS AVAIL

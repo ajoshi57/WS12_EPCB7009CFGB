@@ -578,8 +578,6 @@ int handle_wipemem(int argc, char **argv, uint8_t cmdkwlen, char *response_buf)
          //
          strcat(response_buf, "Arg-1 is <MemID> 'fact', 'cfg' or 'both'\r\n");
          strcat(response_buf, "WIPES one or both Memory spaces clean\r\n");
-         strcat(response_buf, "CLI cmd '#setdefault#' maybe used for DEFAULT Configuration\r\n");
-         strcat(response_buf, "CLI cmds for FACTORY SETTINGS maybe used to setup desired serial and description\r\n");
          //
          memset(buf,0,sizeof(buf));
          sprintf(buf, "E.G. %s fact <CR>\r\n", wipemem.command_name );
