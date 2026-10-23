@@ -1,7 +1,7 @@
 /****************************************************
   FILE NAME		: f01-core-comqueries.c
   ORIGINATOR	: A Joshi
-  LAST EDITED   : 16 OCT 2026
+  LAST EDITED   : 23 OCT 2026
   PROJECT       : WS12_EPCB7011
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
@@ -1416,7 +1416,7 @@ static int construct_showcomsettings_response(char *response_buf)
     //OUTPUT SOURCE SETTING 1-8
     memset(source,0,sizeof(source));
     memset(dest,0,sizeof(dest));
-    sprintf((char *)source,"OUTPUT PULSE   ");
+    sprintf((char *)source,"OUTPUT SOURCE  ");
     strcat((char *)response_buf, source);
     for(j = 0;j < 8;j++)
     {
@@ -1452,7 +1452,7 @@ static int construct_showcomsettings_response(char *response_buf)
     //OUTPUT PW SETTING 9-16
     memset(source,0,sizeof(source));
     memset(dest,0,sizeof(dest));
-    sprintf((char *)source,"OUTPUT PULSE   ");
+    sprintf((char *)source,"OUTPUT SOURCE  ");
     strcat((char *)response_buf, source);
     for(j = 8;j < 16;j++)
     {
