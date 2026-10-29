@@ -1,7 +1,7 @@
 /****************************************************
   FILE NAME		: f01-gpio.c
   ORIGINATOR	: A Joshi
-  LAST EDITED   : 18 OCT 2025
+  LAST EDITED   : 29 OCT 2026
   PROJECT       : WS12_EPCB7011
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
@@ -31,6 +31,8 @@ void setup_gpio_defaults(void);
 void logic_reset_pulse(void);
 //
 void get_alarmrelay_status(uint8_t *status);
+//
+void set_noutput_enable(void);
 //
 //Fns defined here...
 void drive_nresetlogic(uint8_t lev)
@@ -238,3 +240,8 @@ void get_alarmrelay_status(uint8_t *status)
     *status = (i32Val >> 2) & 0x01;
 }
 
+void set_noutput_enable(void)
+{
+    GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_3);
+    GPIOPinWrite(GPIO_PORTK_BASE, GPIO_PIN_3, 0x0 );
+}

@@ -165,6 +165,7 @@ void PinoutSet_epcb7011_gpios(void)
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTK_BASE, GPIO_PIN_2);
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTK_BASE, GPIO_PIN_3);//temp input till ready
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //
 }

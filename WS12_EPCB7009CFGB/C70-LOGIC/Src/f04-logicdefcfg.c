@@ -1,7 +1,7 @@
 /****************************************************
   FILE NAME     : f04-logicdefcfg.c
   ORIGINATOR    : A Joshi
-  LAST EDITED   : 16 OCT 2026
+  LAST EDITED   : 29 OCT 2026
   PROJECT       : WS12_EPCB7009
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
@@ -40,6 +40,8 @@ int program_map(uint8_t channo, uint8_t mapvalue, int debugon);
 static int reevaluate_enabalarm(OAMCFGDBASE_T *cfgdbase, uint8_t *newenabalarm);
 //
 int clear_alarmrelay(void);
+int statemcpw_start(int debugon);
+int statemcgf_start(int debugon);
 
 //fn protos defined here...
 /*****************************************************************************
@@ -1034,6 +1036,112 @@ int clear_alarmrelay(void)
     endx:
     return ret;
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //
+}
+
+int statemcpw_start(int debugon)
+{
+    int ret = -1;
+    int c1,c2,j,flg;
+    uint8_t addr,wdata,rdata,exdata;
+    //
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Write Cycle mcstart
+    addr = 44;
+    wdata = 0x01;
+    flg = twi1logic_writecycle(0, addr, wdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_write_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+#if DEBUG
+        debug_msg("SUCCESS Write MCSTARTPW Addr %02X Data %02X\r\n", addr, wdata);
+#endif
+    }
+    vTaskDelay(100);
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Read Cycle mcstart
+    exdata = 0x01;
+    flg = twi1logic_readcycle(0, addr, &rdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_read_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+        if(debugon)
+        {
+            debug_msg("SUCCESS Read MCSTARTPW Addr %02X Data %02X\r\n", addr, rdata);
+        }
+    }
+    vTaskDelay(100);
+    if((rdata & 0x01) != exdata)
+    {
+        debug_msg("ERROR, Compare MCSTARTPW !\r\n");
+        goto endx;
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ret = 0;
+    /////////////
+    endx:
+    return ret;
+    //
+}
+
+int statemcgf_start(int debugon)
+{
+    int ret = -1;
+    int c1,c2,j,flg;
+    uint8_t addr,wdata,rdata,exdata;
+    //
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Write Cycle mcstart
+    addr = 43;
+    wdata = 0x01;
+    flg = twi1logic_writecycle(0, addr, wdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_write_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+#if DEBUG
+        debug_msg("SUCCESS Write MCSTARTGF Addr %02X Data %02X\r\n", addr, wdata);
+#endif
+    }
+    vTaskDelay(100);
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Read Cycle mcstart
+    exdata = 0x01;
+    flg = twi1logic_readcycle(0, addr, &rdata);
+    if(flg != 0)
+    {
+        debug_msg("ERROR, 'logic_read_cycle' !\r\n");
+        goto endx;
+    }
+    else
+    {
+        if(debugon)
+        {
+            debug_msg("SUCCESS Read MCSTARTGF Addr %02X Data %02X\r\n", addr, rdata);
+        }
+    }
+    vTaskDelay(100);
+    if((rdata & 0x01) != exdata)
+    {
+        debug_msg("ERROR, Compare MCSTARTGF !\r\n");
+        goto endx;
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ret = 0;
+    /////////////
+    endx:
+    return ret;
     //
 }
 

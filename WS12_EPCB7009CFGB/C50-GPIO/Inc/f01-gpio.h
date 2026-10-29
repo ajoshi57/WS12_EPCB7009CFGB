@@ -37,6 +37,7 @@ void setup_gpio_defaults(void);
 void logic_reset_pulse(void);
 //
 void get_alarmrelay_status(uint8_t *status);
+void set_noutput_enable(void);
 
 
 

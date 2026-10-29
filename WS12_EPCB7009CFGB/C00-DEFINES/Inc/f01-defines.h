@@ -1,7 +1,7 @@
 /****************************************************
   FILE NAME		: f01-defines.h
   ORIGINATOR	: A Joshi
-  LAST EDITED   : 23 OCT 2026
+  LAST EDITED   : 29 OCT 2026
   PROJECT		: WS12_EPCB7009CFGB
   Target        : TM4C129DNCPDT
   Crystal       : 25.0000Mhz
@@ -99,7 +99,7 @@
 #define CFG_DESC04 "16 Output Channels mapped to 4 Inputs in any combination "
 #define CFG_DESC05 "Same input maybe mapped to multiple outputs"
 //
-#define CFG_FWVER "F/W Ver:1.0.0 Rel 23OCT2026 1100Hrs"
+#define CFG_FWVER "F/W Ver:1.0.0 Rel 29OCT2026 1800Hrs"
 /////////////////////////////////////////////////////////
 
 //UARTS AVAIL
